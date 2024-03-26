@@ -1,4 +1,5 @@
-@ -3,11 +3,15 @@ package productcrudapp.controller;
+package productcrudapp.controller;
+
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -11,10 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-@ -17,12 +21,70 @@ import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.view.RedirectView;
 
 import productcrudapp.dao.ProductDao;
 import productcrudapp.model.Product;
@@ -23,12 +23,18 @@ import productcrudapp.user.UserService;
 
 @Controller
 public class MainController {
+	ProductDao productDao;
+
+	public MainController(ProductDao productDao) {
+		super();
+		this.productDao = productDao;
+	}
+
 	@Autowired
 	private UserService userService;
 
 	// registration
 	@RequestMapping("/")
-	public String home(Model model) {
 	public String showForm() {
 		return "registrationform";
 	}
@@ -50,7 +56,9 @@ public class MainController {
 
 // user authentication
 	@PostMapping("/loginuser")
-	public String handleLoginForm(@RequestParam String username, @RequestParam String password, Model model,HttpSession session) {
+	public String handleLoginForm(@RequestParam String username, @RequestParam String password, Model model,
+			HttpSession session) {
+		
 
 		if (isValidCredentials(username, password)) {
 			session.setAttribute("username", username);
@@ -77,66 +85,64 @@ public class MainController {
 
 //index page
 	@RequestMapping("/index")
-	public String home(Model model,HttpSession session) {
+	public String home(Model model, HttpSession session) {
+
 		String username = (String) session.getAttribute("username");
-		 if (username != null) {
-		        // Pass the username to the model for displaying in the welcome message
-		        model.addAttribute("username", username);
-		    }
+		if (username != null) {
+			// Pass the username to the model for displaying in the welcome message
+			model.addAttribute("username", username);
+		}
 		List<Product> products = this.productDao.getProducts();
 		model.addAttribute("products", products);
+		return "index";
 
-@ -45,18 +107,14 @@ public class MainController {
 	}
 
+	// add product
+	@RequestMapping("/add-product")
+	public String addproduct() {
+		return "add-product-form";
+	}
+	
 // handle add product form
-	@RequestMapping(value = "/handle-product", method = RequestMethod.POST)
+
 	@PostMapping("/handle-product")
 	public RedirectView handleProduct(@ModelAttribute("product") Product product, HttpServletRequest request) {
 
 		RedirectView redirectView = new RedirectView();
-		redirectView.setUrl(request.getContextPath() + "/");
-		redirectView.setUrl("redirect:/index");
+		redirectView.setUrl(request.getContextPath() + "/index");
 
 		this.productDao.createProduct(product);
-		/*
-		 * if(product !=null) { System.out.println("success");
-		 * List<Product>list=this.productDao.getProducts();
-		 * model.addAttribute("listProuct", list); }
-		 */
 
 		return redirectView;
 	}
 
-@ -65,16 +123,82 @@ public class MainController {
+	@GetMapping("/delete/{productId}")
 	public RedirectView deleteProduct(@PathVariable("productId") int productId, HttpServletRequest request) {
 		this.productDao.deleteProduct(productId);
 		RedirectView redirectView = new RedirectView();
-		redirectView.setUrl(request.getContextPath() + "/");
 		redirectView.setUrl(request.getContextPath() + "/index");
 
 		return redirectView;
 	}
 
-	@RequestMapping(value = "/update/{productId}",method = RequestMethod.GET)
-	public String updateForm(@PathVariable("productId") int pid, Model model) {
 // update show
 	@GetMapping("/updateSave/{pid}")
-	public String updateFormt(@PathVariable("pid") int pid, Model model) {
+	public String updateForm(@PathVariable("pid") int pid, Model model) {
 		Product product = this.productDao.getProduct(pid);
 		model.addAttribute("product", product);
 		System.out.println("in form");
 		return "update-form";
 	}
 
-}
 	// update handle
 
 	@GetMapping(value = "/update-handle")
-	public RedirectView updateProduct(@ModelAttribute("product") Product product,HttpServletRequest request,  Model model) {
-		RedirectView redirectView=new RedirectView();
-		redirectView.setUrl(request.getContextPath()+"/index");
-	    this.productDao.updateProduct(product);
+	public RedirectView updateHandle(@ModelAttribute("product") Product product, int id, String name,
+			String description, Double price, HttpServletRequest request, Model model) {
+		RedirectView redirectView = new RedirectView();
+		redirectView.setUrl(request.getContextPath() + "/index");
+		this.productDao.updateData(id, name, description, price);
 		model.addAttribute("product", product);
 		System.out.println("in update handle");
 		return redirectView;
